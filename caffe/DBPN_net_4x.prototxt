@@ -1,0 +1,2402 @@
+name: "DRBPSR"
+layer {
+  name: "data"
+  type: "HDF5Data"
+  top: "data"
+  top: "label"
+  hdf5_data_param {
+    source: "train_4x_128_div2k_flickr_rgb.txt"
+    batch_size: 12
+  }
+  include: { phase: TRAIN }
+}
+layer {
+  name: "data"
+  type: "HDF5Data"
+  top: "data"
+  top: "label"
+  hdf5_data_param {
+    source: "test_deconv_128_rgb.txt"
+    batch_size: 2
+  }
+  include: { phase: TEST }
+}
+
+layer {
+  name: "conv0_1"
+  type: "Convolution"
+  bottom: "data"
+  top: "conv0_1"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 256
+    kernel_size: 3
+    stride: 1
+    pad: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.02946
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu0_1"
+  type: "PReLU"
+  bottom: "conv0_1"
+  top: "conv0_1"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+  name: "conv1"
+  type: "Convolution"
+  bottom: "conv0_1"
+  top: "conv1"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1"
+  type: "PReLU"
+  bottom: "conv1"
+  top: "conv1"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+######################### BP1 #########################
+layer {
+  name: "conv1_bp1"
+  type: "Deconvolution"
+  bottom: "conv1"
+  top: "conv1_bp1"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp1"
+  type: "PReLU"
+  bottom: "conv1_bp1"
+  top: "conv1_bp1"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp1"
+  type: "Convolution"
+  bottom: "conv1_bp1"
+  top: "conv2_bp1"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp1"
+  type: "PReLU"
+  bottom: "conv2_bp1"
+  top: "conv2_bp1"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp1"
+    type: "Eltwise"
+    bottom: "conv1"
+    bottom: "conv2_bp1"
+    top: "eltwise1_bp1"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp1"
+  type: "Deconvolution"
+  bottom: "eltwise1_bp1"
+  top: "conv3_bp1"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp1"
+  type: "PReLU"
+  bottom: "conv3_bp1"
+  top: "conv3_bp1"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp1"
+    type: "Eltwise"
+    bottom: "conv3_bp1"
+    bottom: "conv1_bp1"
+    top: "output_bp1"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+######################### BP2 #########################
+layer {
+  name: "conv1_bp2"
+  type: "Convolution"
+  bottom: "output_bp1"
+  top: "conv1_bp2"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp2"
+  type: "PReLU"
+  bottom: "conv1_bp2"
+  top: "conv1_bp2"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp2"
+  type: "Deconvolution"
+  bottom: "conv1_bp2"
+  top: "conv2_bp2"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp2"
+  type: "PReLU"
+  bottom: "conv2_bp2"
+  top: "conv2_bp2"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp2"
+    type: "Eltwise"
+    bottom: "output_bp1"
+    bottom: "conv2_bp2"
+    top: "eltwise1_bp2"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp2"
+  type: "Convolution"
+  bottom: "eltwise1_bp2"
+  top: "conv3_bp2"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp2"
+  type: "PReLU"
+  bottom: "conv3_bp2"
+  top: "conv3_bp2"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp2"
+    type: "Eltwise"
+    bottom: "conv3_bp2"
+    bottom: "conv1_bp2"
+    top: "output_bp2"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+#######Start dense#########
+######################### BP3 #########################
+layer {
+  name: "conv1_bp3"
+  type: "Deconvolution"
+  bottom: "output_bp2"
+  top: "conv1_bp3"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp3"
+  type: "PReLU"
+  bottom: "conv1_bp3"
+  top: "conv1_bp3"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp3"
+  type: "Convolution"
+  bottom: "conv1_bp3"
+  top: "conv2_bp3"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp3"
+  type: "PReLU"
+  bottom: "conv2_bp3"
+  top: "conv2_bp3"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp3"
+    type: "Eltwise"
+    bottom: "output_bp2"
+    bottom: "conv2_bp3"
+    top: "eltwise1_bp3"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp3"
+  type: "Deconvolution"
+  bottom: "eltwise1_bp3"
+  top: "conv3_bp3"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp3"
+  type: "PReLU"
+  bottom: "conv3_bp3"
+  top: "conv3_bp3"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp3"
+    type: "Eltwise"
+    bottom: "conv3_bp3"
+    bottom: "conv1_bp3"
+    top: "output_bp3"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp3"
+  type: "Concat"
+  bottom: "output_bp3"
+  bottom: "output_bp1"
+  top: "concat_bp3"
+}
+
+layer {
+  name: "out_concat_bp3"
+  type: "Convolution"
+  bottom: "concat_bp3"
+  top: "out_concat_bp3"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp3"
+  type: "PReLU"
+  bottom: "out_concat_bp3"
+  top: "out_concat_bp3"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+######################### BP4 #########################
+layer {
+  name: "conv1_bp4"
+  type: "Convolution"
+  bottom: "out_concat_bp3"
+  top: "conv1_bp4"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp4"
+  type: "PReLU"
+  bottom: "conv1_bp4"
+  top: "conv1_bp4"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp4"
+  type: "Deconvolution"
+  bottom: "conv1_bp4"
+  top: "conv2_bp4"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp4"
+  type: "PReLU"
+  bottom: "conv2_bp4"
+  top: "conv2_bp4"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp4"
+    type: "Eltwise"
+    bottom: "out_concat_bp3"
+    bottom: "conv2_bp4"
+    top: "eltwise1_bp4"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp4"
+  type: "Convolution"
+  bottom: "eltwise1_bp4"
+  top: "conv3_bp4"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp4"
+  type: "PReLU"
+  bottom: "conv3_bp4"
+  top: "conv3_bp4"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp4"
+    type: "Eltwise"
+    bottom: "conv3_bp4"
+    bottom: "conv1_bp4"
+    top: "output_bp4"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp4"
+  type: "Concat"
+  bottom: "output_bp4"
+  bottom: "output_bp2"
+  top: "concat_bp4"
+}
+
+layer {
+  name: "out_concat_bp4"
+  type: "Convolution"
+  bottom: "concat_bp4"
+  top: "out_concat_bp4"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp4"
+  type: "PReLU"
+  bottom: "out_concat_bp4"
+  top: "out_concat_bp4"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+######################### BP5 #########################
+layer {
+  name: "conv1_bp5"
+  type: "Deconvolution"
+  bottom: "out_concat_bp4"
+  top: "conv1_bp5"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp5"
+  type: "PReLU"
+  bottom: "conv1_bp5"
+  top: "conv1_bp5"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp5"
+  type: "Convolution"
+  bottom: "conv1_bp5"
+  top: "conv2_bp5"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp5"
+  type: "PReLU"
+  bottom: "conv2_bp5"
+  top: "conv2_bp5"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp5"
+    type: "Eltwise"
+    bottom: "out_concat_bp4"
+    bottom: "conv2_bp5"
+    top: "eltwise1_bp5"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp5"
+  type: "Deconvolution"
+  bottom: "eltwise1_bp5"
+  top: "conv3_bp5"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp5"
+  type: "PReLU"
+  bottom: "conv3_bp5"
+  top: "conv3_bp5"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp5"
+    type: "Eltwise"
+    bottom: "conv3_bp5"
+    bottom: "conv1_bp5"
+    top: "output_bp5"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp5"
+  type: "Concat"
+  bottom: "output_bp5"
+  bottom: "concat_bp3"
+  top: "concat_bp5"
+}
+
+layer {
+  name: "out_concat_bp5"
+  type: "Convolution"
+  bottom: "concat_bp5"
+  top: "out_concat_bp5"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp5"
+  type: "PReLU"
+  bottom: "out_concat_bp5"
+  top: "out_concat_bp5"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+######################### BP6 #########################
+layer {
+  name: "conv1_bp6"
+  type: "Convolution"
+  bottom: "out_concat_bp5"
+  top: "conv1_bp6"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp6"
+  type: "PReLU"
+  bottom: "conv1_bp6"
+  top: "conv1_bp6"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp6"
+  type: "Deconvolution"
+  bottom: "conv1_bp6"
+  top: "conv2_bp6"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp6"
+  type: "PReLU"
+  bottom: "conv2_bp6"
+  top: "conv2_bp6"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp6"
+    type: "Eltwise"
+    bottom: "out_concat_bp5"
+    bottom: "conv2_bp6"
+    top: "eltwise1_bp6"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp6"
+  type: "Convolution"
+  bottom: "eltwise1_bp6"
+  top: "conv3_bp6"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp6"
+  type: "PReLU"
+  bottom: "conv3_bp6"
+  top: "conv3_bp6"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp6"
+    type: "Eltwise"
+    bottom: "conv3_bp6"
+    bottom: "conv1_bp6"
+    top: "output_bp6"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp6"
+  type: "Concat"
+  bottom: "output_bp6"
+  bottom: "concat_bp4"
+  top: "concat_bp6"
+}
+
+layer {
+  name: "out_concat_bp6"
+  type: "Convolution"
+  bottom: "concat_bp6"
+  top: "out_concat_bp6"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp6"
+  type: "PReLU"
+  bottom: "out_concat_bp6"
+  top: "out_concat_bp6"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+######################### BP7 #########################
+layer {
+  name: "conv1_bp7"
+  type: "Deconvolution"
+  bottom: "out_concat_bp6"
+  top: "conv1_bp7"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp7"
+  type: "PReLU"
+  bottom: "conv1_bp7"
+  top: "conv1_bp7"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp7"
+  type: "Convolution"
+  bottom: "conv1_bp7"
+  top: "conv2_bp7"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp7"
+  type: "PReLU"
+  bottom: "conv2_bp7"
+  top: "conv2_bp7"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp7"
+    type: "Eltwise"
+    bottom: "out_concat_bp6"
+    bottom: "conv2_bp7"
+    top: "eltwise1_bp7"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp7"
+  type: "Deconvolution"
+  bottom: "eltwise1_bp7"
+  top: "conv3_bp7"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp7"
+  type: "PReLU"
+  bottom: "conv3_bp7"
+  top: "conv3_bp7"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp7"
+    type: "Eltwise"
+    bottom: "conv3_bp7"
+    bottom: "conv1_bp7"
+    top: "output_bp7"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp7"
+  type: "Concat"
+  bottom: "output_bp7"
+  bottom: "concat_bp5"
+  top: "concat_bp7"
+}
+
+layer {
+  name: "out_concat_bp7"
+  type: "Convolution"
+  bottom: "concat_bp7"
+  top: "out_concat_bp7"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp7"
+  type: "PReLU"
+  bottom: "out_concat_bp7"
+  top: "out_concat_bp7"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+######################### BP8 #########################
+layer {
+  name: "conv1_bp8"
+  type: "Convolution"
+  bottom: "out_concat_bp7"
+  top: "conv1_bp8"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp8"
+  type: "PReLU"
+  bottom: "conv1_bp8"
+  top: "conv1_bp8"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp8"
+  type: "Deconvolution"
+  bottom: "conv1_bp8"
+  top: "conv2_bp8"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp8"
+  type: "PReLU"
+  bottom: "conv2_bp8"
+  top: "conv2_bp8"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp8"
+    type: "Eltwise"
+    bottom: "out_concat_bp7"
+    bottom: "conv2_bp8"
+    top: "eltwise1_bp8"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp8"
+  type: "Convolution"
+  bottom: "eltwise1_bp8"
+  top: "conv3_bp8"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp8"
+  type: "PReLU"
+  bottom: "conv3_bp8"
+  top: "conv3_bp8"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp8"
+    type: "Eltwise"
+    bottom: "conv3_bp8"
+    bottom: "conv1_bp8"
+    top: "output_bp8"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp8"
+  type: "Concat"
+  bottom: "output_bp8"
+  bottom: "concat_bp6"
+  top: "concat_bp8"
+}
+
+layer {
+  name: "out_concat_bp8"
+  type: "Convolution"
+  bottom: "concat_bp8"
+  top: "out_concat_bp8"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp8"
+  type: "PReLU"
+  bottom: "out_concat_bp8"
+  top: "out_concat_bp8"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+######################### BP9 #########################
+layer {
+  name: "conv1_bp9"
+  type: "Deconvolution"
+  bottom: "out_concat_bp8"
+  top: "conv1_bp9"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp9"
+  type: "PReLU"
+  bottom: "conv1_bp9"
+  top: "conv1_bp9"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp9"
+  type: "Convolution"
+  bottom: "conv1_bp9"
+  top: "conv2_bp9"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp9"
+  type: "PReLU"
+  bottom: "conv2_bp9"
+  top: "conv2_bp9"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp9"
+    type: "Eltwise"
+    bottom: "out_concat_bp8"
+    bottom: "conv2_bp9"
+    top: "eltwise1_bp9"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp9"
+  type: "Deconvolution"
+  bottom: "eltwise1_bp9"
+  top: "conv3_bp9"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp9"
+  type: "PReLU"
+  bottom: "conv3_bp9"
+  top: "conv3_bp9"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp9"
+    type: "Eltwise"
+    bottom: "conv3_bp9"
+    bottom: "conv1_bp9"
+    top: "output_bp9"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp9"
+  type: "Concat"
+  bottom: "output_bp9"
+  bottom: "concat_bp7"
+  top: "concat_bp9"
+}
+
+layer {
+  name: "out_concat_bp9"
+  type: "Convolution"
+  bottom: "concat_bp9"
+  top: "out_concat_bp9"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp9"
+  type: "PReLU"
+  bottom: "out_concat_bp9"
+  top: "out_concat_bp9"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+######################### BP10 #########################
+layer {
+  name: "conv1_bp10"
+  type: "Convolution"
+  bottom: "out_concat_bp9"
+  top: "conv1_bp10"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp10"
+  type: "PReLU"
+  bottom: "conv1_bp10"
+  top: "conv1_bp10"
+prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp10"
+  type: "Deconvolution"
+  bottom: "conv1_bp10"
+  top: "conv2_bp10"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp10"
+  type: "PReLU"
+  bottom: "conv2_bp10"
+  top: "conv2_bp10"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp10"
+    type: "Eltwise"
+    bottom: "out_concat_bp9"
+    bottom: "conv2_bp10"
+    top: "eltwise1_bp10"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp10"
+  type: "Convolution"
+  bottom: "eltwise1_bp10"
+  top: "conv3_bp10"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp10"
+  type: "PReLU"
+  bottom: "conv3_bp10"
+  top: "conv3_bp10"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp10"
+    type: "Eltwise"
+    bottom: "conv3_bp10"
+    bottom: "conv1_bp10"
+    top: "output_bp10"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp10"
+  type: "Concat"
+  bottom: "output_bp10"
+  bottom: "concat_bp8"
+  top: "concat_bp10"
+}
+
+layer {
+  name: "out_concat_bp10"
+  type: "Convolution"
+  bottom: "concat_bp10"
+  top: "out_concat_bp10"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp10"
+  type: "PReLU"
+  bottom: "out_concat_bp10"
+  top: "out_concat_bp10"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+######################### BP11 #########################
+layer {
+  name: "conv1_bp11"
+  type: "Deconvolution"
+  bottom: "out_concat_bp10"
+  top: "conv1_bp11"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp11"
+  type: "PReLU"
+  bottom: "conv1_bp11"
+  top: "conv1_bp11"
+prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp11"
+  type: "Convolution"
+  bottom: "conv1_bp11"
+  top: "conv2_bp11"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp11"
+  type: "PReLU"
+  bottom: "conv2_bp11"
+  top: "conv2_bp11"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp11"
+    type: "Eltwise"
+    bottom: "out_concat_bp10"
+    bottom: "conv2_bp11"
+    top: "eltwise1_bp11"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp11"
+  type: "Deconvolution"
+  bottom: "eltwise1_bp11"
+  top: "conv3_bp11"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp11"
+  type: "PReLU"
+  bottom: "conv3_bp11"
+  top: "conv3_bp11"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp11"
+    type: "Eltwise"
+    bottom: "conv3_bp11"
+    bottom: "conv1_bp11"
+    top: "output_bp11"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp11"
+  type: "Concat"
+  bottom: "output_bp11"
+  bottom: "concat_bp9"
+  top: "concat_bp11"
+}
+
+layer {
+  name: "out_concat_bp11"
+  type: "Convolution"
+  bottom: "concat_bp11"
+  top: "out_concat_bp11"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp11"
+  type: "PReLU"
+  bottom: "out_concat_bp11"
+  top: "out_concat_bp11"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+######################### BP12 #########################
+layer {
+  name: "conv1_bp12"
+  type: "Convolution"
+  bottom: "out_concat_bp11"
+  top: "conv1_bp12"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp12"
+  type: "PReLU"
+  bottom: "conv1_bp12"
+  top: "conv1_bp12"
+prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp12"
+  type: "Deconvolution"
+  bottom: "conv1_bp12"
+  top: "conv2_bp12"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp12"
+  type: "PReLU"
+  bottom: "conv2_bp12"
+  top: "conv2_bp12"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp12"
+    type: "Eltwise"
+    bottom: "out_concat_bp11"
+    bottom: "conv2_bp12"
+    top: "eltwise1_bp12"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp12"
+  type: "Convolution"
+  bottom: "eltwise1_bp12"
+  top: "conv3_bp12"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp12"
+  type: "PReLU"
+  bottom: "conv3_bp12"
+  top: "conv3_bp12"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp12"
+    type: "Eltwise"
+    bottom: "conv3_bp12"
+    bottom: "conv1_bp12"
+    top: "output_bp12"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp12"
+  type: "Concat"
+  bottom: "output_bp12"
+  bottom: "concat_bp10"
+  top: "concat_bp12"
+}
+
+layer {
+  name: "out_concat_bp12"
+  type: "Convolution"
+  bottom: "concat_bp12"
+  top: "out_concat_bp12"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 1
+    stride: 1
+    pad: 0
+    weight_filler {
+      type: "gaussian"
+      std: 0.1767
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_concat_bp12"
+  type: "PReLU"
+  bottom: "out_concat_bp12"
+  top: "out_concat_bp12"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+######################### BP13 #########################
+layer {
+  name: "conv1_bp13"
+  type: "Deconvolution"
+  bottom: "out_concat_bp12"
+  top: "conv1_bp13"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1_bp13"
+  type: "PReLU"
+  bottom: "conv1_bp13"
+  top: "conv1_bp13"
+prelu_param {
+    channel_shared: 1
+  }
+}
+
+
+layer {
+  name: "conv2_bp13"
+  type: "Convolution"
+  bottom: "conv1_bp13"
+  top: "conv2_bp13"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu2_bp13"
+  type: "PReLU"
+  bottom: "conv2_bp13"
+  top: "conv2_bp13"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise1_bp13"
+    type: "Eltwise"
+    bottom: "out_concat_bp12"
+    bottom: "conv2_bp13"
+    top: "eltwise1_bp13"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "conv3_bp13"
+  type: "Deconvolution"
+  bottom: "eltwise1_bp13"
+  top: "conv3_bp13"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 64
+    kernel_size: 8
+    stride: 4
+    pad: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.022
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3_bp13"
+  type: "PReLU"
+  bottom: "conv3_bp13"
+  top: "conv3_bp13"
+  prelu_param {
+    channel_shared: 1
+  }
+}
+
+layer {
+    name: "eltwise2_bp13"
+    type: "Eltwise"
+    bottom: "conv3_bp13"
+    bottom: "conv1_bp13"
+    top: "output_bp13"
+    eltwise_param {
+        operation: 1
+    }
+}
+
+layer {
+  name: "concat_bp13"
+  type: "Concat"
+  bottom: "output_bp13"
+  bottom: "concat_bp11"
+  top: "concat_bp13"
+}
+
+######################### END BP #########################
+
+layer {
+  name: "conv_final"
+  type: "Convolution"
+  bottom: "concat_bp13"
+  top: "conv_final"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 1
+  }
+  convolution_param {
+    num_output: 3
+    kernel_size: 3
+    stride: 1
+    pad: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.1
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+    name: "eltwise_loss1"
+    type: "Eltwise"
+    bottom: "label"
+    bottom: "conv_final"
+    top: "diff1"
+    eltwise_param {
+        operation: SUM
+        coeff: 1
+        coeff: -1
+    }
+}
+
+layer {
+  name: "layer1"
+  bottom: "diff1"
+  top: "abs1"
+  type: "AbsVal"
+}
+
+layer {
+  name: "fc1"
+  type: "InnerProduct"
+  param { lr_mult: 0 decay_mult: 0 }
+  param { lr_mult: 0 decay_mult: 0 }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "constant"
+      value: 1    
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  bottom: "abs1"
+  top: "loss1"
+  loss_weight: 1
+}
