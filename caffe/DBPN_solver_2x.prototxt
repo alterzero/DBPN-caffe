@@ -1,6 +1,6 @@
 # The train/test net protocol buffer definition
 net: "DBPN_net_2x.prototxt"
-test_iter: 600
+test_iter: 500
 test_interval: 2000
 iter_size: 1
 
@@ -12,11 +12,11 @@ weight_decay: 0.0001
 # The learning rate policy
 lr_policy: "step"
 gamma: 0.1
-stepsize: 800000
+stepsize: 500000
 # Display every 100 iterations
 display: 100
 # The maximum number of iterations
-max_iter: 1600000
+max_iter: 1000000
 # snapshot intermediate results
 snapshot: 50000
 snapshot_prefix: "model/DBPN_2x"
