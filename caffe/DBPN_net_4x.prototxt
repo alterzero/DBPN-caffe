@@ -5,7 +5,7 @@ layer {
   top: "data"
   top: "label"
   hdf5_data_param {
-    source: "train_4x_128_div2k_flickr_rgb.txt"
+    source: "train_4x_div_128_rgb.txt"
     batch_size: 12
   }
   include: { phase: TRAIN }
